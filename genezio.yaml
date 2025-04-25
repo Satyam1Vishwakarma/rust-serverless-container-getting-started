@@ -1,5 +1,32 @@
-container:
-    path: ./Dockerfile
-name: rust-container-getting-started
-region: eu-central-1
-yamlVersion: 2
+FROM oven/bun:latest
+
+# Install Docker CLI inside the container
+RUN apt-get update && \
+    apt-get install -y \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release && \
+    mkdir -m 0755 -p /etc/apt/keyrings && \
+    curl -fsSL https://download.docker.com/linux/debian/gpg | \
+      gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
+    echo \
+    "deb [arch=$(dpkg --print-architecture) \
+    signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
+    $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
+    apt-get update && \
+    apt-get install -y docker-ce-cli && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files and install dependencies
+COPY package.json bun.lockb* ./
+RUN bun install
+
+# Copy the app code
+COPY . .
+
+EXPOSE 8080
+CMD ["bun", "run", "start"]
